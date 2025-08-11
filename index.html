@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShowUp – Time to Rise</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: url('background.jpg') no-repeat center center/cover;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      backdrop-filter: brightness(0.85);
+    }
+    .overlay {
+      background: rgba(0,0,0,0.5);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: normal;
+      margin-bottom: 1.5rem;
+      color: #ffd27f;
+    }
+    input {
+      padding: 0.8rem;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      margin-top: 1rem;
+      font-size: 1rem;
+      outline: none;
+    }
+    button {
+      padding: 0.8rem;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      margin-top: 1rem;
+      background-color: #ff7f50;
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #ff6333;
+    }
+    .success {
+      margin-top: 1rem;
+      color: #a8ffb0;
+    }
+    .error {
+      margin-top: 1rem;
+      color: #ffb0b0;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h1>ShowUp</h1>
+    <h2>Time to Rise</h2>
+    <p>Join the waitlist and be the first to level up your habits.</p>
+    <input type="email" id="emailInput" placeholder="Enter your email" />
+    <button onclick="joinWaitlist()">Join Now</button>
+    <div id="message"></div>
+  </div>
+
+  <!-- Firebase SDKs (compat version for old syntax) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    // 1. Your Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyATt_LDfMh8MD7PblEQnEGIAd3FzwLNSV8",
+      authDomain: "waitlist-a8843.firebaseapp.com",
+      projectId: "waitlist-a8843",
+      storageBucket: "waitlist-a8843.firebasestorage.app",
+      messagingSenderId: "739632545678",
+      appId: "1:739632545678:web:438635da9f2f0a5253eedf",
+      measurementId: "G-KYYQBZFK42"
+    };
+
+    // 2. Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 3. Function to store email
+    async function joinWaitlist() {
+      const email = document.getElementById("emailInput").value.trim();
+      const messageDiv = document.getElementById("message");
+
+      if (!email) {
+        messageDiv.innerHTML = "<p class='error'>Please enter an email.</p>";
+        return;
+      }
+
+      try {
+        await db.collection("waitlist").add({
+          email: email,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        messageDiv.innerHTML = "<p class='success'>🎉 You're on the list!</p>";
+        document.getElementById("emailInput").value = "";
+      } catch (error) {
+        console.error(error);
+        messageDiv.innerHTML = "<p class='error'>Something went wrong. Try again!</p>";
+      }
+    }
+  </script>
+</body>
+</html>
