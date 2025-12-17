@@ -25,20 +25,8 @@
       width: 100%;
     }
 
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.3rem;
-    }
-
-    h2 {
-      font-size: 1.2rem;
-      color: #ffd27f;
-      margin-bottom: 1.2rem;
-    }
-
-    p {
-      margin-bottom: 1rem;
-    }
+    h1 { font-size: 2.5rem; margin-bottom: 0.3rem; }
+    h2 { font-size: 1.2rem; color: #ffd27f; margin-bottom: 1.2rem; }
 
     select, input {
       padding: 0.8rem;
@@ -47,7 +35,6 @@
       border-radius: 8px;
       margin-top: 0.8rem;
       font-size: 1rem;
-      outline: none;
     }
 
     button {
@@ -63,19 +50,8 @@
       cursor: pointer;
     }
 
-    button:hover {
-      background-color: #ff6333;
-    }
-
-    .success {
-      margin-top: 1rem;
-      color: #a8ffb0;
-    }
-
-    .error {
-      margin-top: 1rem;
-      color: #ffb0b0;
-    }
+    .success { margin-top: 1rem; color: #a8ffb0; }
+    .error { margin-top: 1rem; color: #ffb0b0; }
   </style>
 </head>
 
@@ -95,11 +71,10 @@
     <input type="email" id="emailInput" placeholder="Enter your email" />
 
     <button onclick="joinWaitlist()">Join Now</button>
-
     <div id="message"></div>
   </div>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
@@ -122,27 +97,17 @@
       const messageDiv = document.getElementById("message");
 
       if (!email || !platform) {
-        messageDiv.innerHTML = "<p class='error'>Please select platform and enter email.</p>";
+        messageDiv.innerHTML = "<p class='error'>Select platform and enter email.</p>";
         return;
       }
 
-      const collectionName = platform === "Android"
-        ? "Android_Waitlist"
-        : "IOS_Waitlist";
+      const collectionName =
+        platform === "Android" ? "Android_Waitlist" : "IOS_Waitlist";
 
       try {
-        // Add email
         await db.collection(collectionName).add({
           email: email,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Increment count
-        const countRef = db.collection(collectionName).doc("meta");
-        await db.runTransaction(async (transaction) => {
-          const doc = await transaction.get(countRef);
-          const currentCount = doc.exists ? doc.data().count : 0;
-          transaction.set(countRef, { count: currentCount + 1 });
         });
 
         messageDiv.innerHTML = "<p class='success'>🎉 You're on the list!</p>";
