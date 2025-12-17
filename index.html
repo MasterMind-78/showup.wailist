@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ShowUp – Time to Rise</title>
+  <title>Restart – Rise Again</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -37,6 +37,37 @@
       margin-bottom: 1.5rem;
       color: #ffd27f;
     }
+    p.subtitle {
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .platform-options {
+      display: flex;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .platform-btn {
+      flex: 1;
+      padding: 1rem;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .platform-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .platform-btn.selected {
+      background: #ff7f50;
+      border-color: #ff7f50;
+    }
+    .platform-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
     input {
       padding: 0.8rem;
       width: 100%;
@@ -45,6 +76,7 @@
       margin-top: 1rem;
       font-size: 1rem;
       outline: none;
+      box-sizing: border-box;
     }
     button {
       padding: 0.8rem;
@@ -70,13 +102,29 @@
       margin-top: 1rem;
       color: #ffb0b0;
     }
+    .warning {
+      margin-top: 1rem;
+      color: #ffd27f;
+    }
   </style>
 </head>
 <body>
   <div class="overlay">
-    <h1>ShowUp</h1>
-    <h2>Time to Rise</h2>
-    <p>Join the waitlist and be the first to level up your habits.</p>
+    <h1>Restart</h1>
+    <h2>Rise Again</h2>
+    <p class="subtitle">Join the waitlist and quit porn forever.</p>
+    
+    <div class="platform-options">
+      <button class="platform-btn" onclick="selectPlatform('android')">
+        <div class="platform-icon">🤖</div>
+        Android
+      </button>
+      <button class="platform-btn" onclick="selectPlatform('ios')">
+        <div class="platform-icon">🍎</div>
+        iOS
+      </button>
+    </div>
+    
     <input type="email" id="emailInput" placeholder="Enter your email" />
     <button onclick="joinWaitlist()">Join Now</button>
     <div id="message"></div>
@@ -102,26 +150,108 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 3. Function to store email
+    // 3. Platform selection
+    let selectedPlatform = null;
+
+    function selectPlatform(platform) {
+      selectedPlatform = platform;
+      
+      // Remove selected class from all buttons
+      document.querySelectorAll('.platform-btn').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      
+      // Add selected class to clicked button
+      if (platform === 'android') {
+        document.querySelectorAll('.platform-btn')[0].classList.add('selected');
+      } else {
+        document.querySelectorAll('.platform-btn')[1].classList.add('selected');
+      }
+      
+      // Clear any previous warning messages
+      const messageDiv = document.getElementById("message");
+      if (messageDiv.innerHTML.includes("Please select")) {
+        messageDiv.innerHTML = "";
+      }
+    }
+
+    // 4. Function to store email and update count
     async function joinWaitlist() {
       const email = document.getElementById("emailInput").value.trim();
       const messageDiv = document.getElementById("message");
 
+      // Validation
+      if (!selectedPlatform) {
+        messageDiv.innerHTML = "<p class='warning'>Please select your platform (Android or iOS)</p>";
+        return;
+      }
+      
       if (!email) {
         messageDiv.innerHTML = "<p class='error'>Please enter an email.</p>";
         return;
       }
 
+      // Email format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        messageDiv.innerHTML = "<p class='error'>Please enter a valid email address.</p>";
+        return;
+      }
+
       try {
-        await db.collection("waitlist").add({
+        // Determine which collection to use
+        const collectionName = selectedPlatform === 'android' ? 'Android Waitlist' : 'IOS Waitlist';
+        
+        // Add email to the specific waitlist
+        await db.collection(collectionName).add({
           email: email,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-        messageDiv.innerHTML = "<p class='success'>🎉 You're on the list!</p>";
+        
+        // Update the count in the counters collection
+        const counterRef = db.collection('counters').doc(`${selectedPlatform}_waitlist_count`);
+        
+        // Use transaction to safely increment the counter
+        await db.runTransaction(async (transaction) => {
+          const counterDoc = await transaction.get(counterRef);
+          
+          if (!counterDoc.exists) {
+            // If counter doesn't exist, create it with count = 1
+            transaction.set(counterRef, {
+              count: 1,
+              lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          } else {
+            // If counter exists, increment it by 1
+            const currentCount = counterDoc.data().count || 0;
+            transaction.update(counterRef, {
+              count: currentCount + 1,
+              lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        });
+
+        // Success message
+        messageDiv.innerHTML = `<p class='success'>🎉 You're on the ${selectedPlatform.toUpperCase()} waitlist!</p>`;
+        
+        // Clear inputs
         document.getElementById("emailInput").value = "";
+        selectedPlatform = null;
+        
+        // Remove selected class from buttons
+        document.querySelectorAll('.platform-btn').forEach(btn => {
+          btn.classList.remove('selected');
+        });
+        
       } catch (error) {
-        console.error(error);
-        messageDiv.innerHTML = "<p class='error'>Something went wrong. Try again!</p>";
+        console.error("Error:", error);
+        
+        // Check if it's a duplicate email error
+        if (error.code === 'permission-denied') {
+          messageDiv.innerHTML = "<p class='error'>This email is already on the waitlist.</p>";
+        } else {
+          messageDiv.innerHTML = "<p class='error'>Something went wrong. Please try again!</p>";
+        }
       }
     }
   </script>
