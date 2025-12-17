@@ -10,74 +10,46 @@
       background: url('background.jpg') no-repeat center center/cover;
       color: white;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
       margin: 0;
-      padding: 0;
-      backdrop-filter: brightness(0.85);
     }
+
     .overlay {
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.55);
       padding: 2rem;
       border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
       text-align: center;
       max-width: 420px;
       width: 100%;
     }
+
     h1 {
       font-size: 2.5rem;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.3rem;
     }
+
     h2 {
       font-size: 1.2rem;
-      font-weight: normal;
-      margin-bottom: 1.5rem;
       color: #ffd27f;
+      margin-bottom: 1.2rem;
     }
-    p.subtitle {
-      margin-bottom: 1.5rem;
-      line-height: 1.5;
+
+    p {
+      margin-bottom: 1rem;
     }
-    .platform-options {
-      display: flex;
-      gap: 1rem;
-      margin: 1.5rem 0;
-    }
-    .platform-btn {
-      flex: 1;
-      padding: 1rem;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.1);
-      color: white;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    .platform-btn:hover {
-      background: rgba(255,255,255,0.2);
-    }
-    .platform-btn.selected {
-      background: #ff7f50;
-      border-color: #ff7f50;
-    }
-    .platform-icon {
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-    }
-    input {
+
+    select, input {
       padding: 0.8rem;
       width: 100%;
       border: none;
       border-radius: 8px;
-      margin-top: 1rem;
+      margin-top: 0.8rem;
       font-size: 1rem;
       outline: none;
-      box-sizing: border-box;
     }
+
     button {
       padding: 0.8rem;
       width: 100%;
@@ -89,169 +61,97 @@
       font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
-      transition: background 0.3s ease;
     }
+
     button:hover {
       background-color: #ff6333;
     }
+
     .success {
       margin-top: 1rem;
       color: #a8ffb0;
     }
+
     .error {
       margin-top: 1rem;
       color: #ffb0b0;
     }
-    .warning {
-      margin-top: 1rem;
-      color: #ffd27f;
-    }
   </style>
 </head>
+
 <body>
   <div class="overlay">
     <h1>Restart</h1>
     <h2>Rise Again</h2>
-    <p class="subtitle">Join the waitlist and quit porn forever.</p>
-    
-    <div class="platform-options">
-      <button class="platform-btn" onclick="selectPlatform('android')">
-        <div class="platform-icon">🤖</div>
-        Android
-      </button>
-      <button class="platform-btn" onclick="selectPlatform('ios')">
-        <div class="platform-icon">🍎</div>
-        iOS
-      </button>
-    </div>
-    
+
+    <p>Join the waitlist and quit porn forever.</p>
+
+    <select id="platformSelect">
+      <option value="">Select Platform</option>
+      <option value="Android">Android</option>
+      <option value="IOS">iOS</option>
+    </select>
+
     <input type="email" id="emailInput" placeholder="Enter your email" />
+
     <button onclick="joinWaitlist()">Join Now</button>
+
     <div id="message"></div>
   </div>
 
-  <!-- Firebase SDKs (compat version for old syntax) -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <script>
-    // 1. Your Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyATt_LDfMh8MD7PblEQnEGIAd3FzwLNSV8",
       authDomain: "waitlist-a8843.firebaseapp.com",
       projectId: "waitlist-a8843",
       storageBucket: "waitlist-a8843.firebasestorage.app",
       messagingSenderId: "739632545678",
-      appId: "1:739632545678:web:438635da9f2f0a5253eedf",
-      measurementId: "G-KYYQBZFK42"
+      appId: "1:739632545678:web:438635da9f2f0a5253eedf"
     };
 
-    // 2. Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 3. Platform selection
-    let selectedPlatform = null;
-
-    function selectPlatform(platform) {
-      selectedPlatform = platform;
-      
-      // Remove selected class from all buttons
-      document.querySelectorAll('.platform-btn').forEach(btn => {
-        btn.classList.remove('selected');
-      });
-      
-      // Add selected class to clicked button
-      if (platform === 'android') {
-        document.querySelectorAll('.platform-btn')[0].classList.add('selected');
-      } else {
-        document.querySelectorAll('.platform-btn')[1].classList.add('selected');
-      }
-      
-      // Clear any previous warning messages
-      const messageDiv = document.getElementById("message");
-      if (messageDiv.innerHTML.includes("Please select")) {
-        messageDiv.innerHTML = "";
-      }
-    }
-
-    // 4. Function to store email and update count
     async function joinWaitlist() {
       const email = document.getElementById("emailInput").value.trim();
+      const platform = document.getElementById("platformSelect").value;
       const messageDiv = document.getElementById("message");
 
-      // Validation
-      if (!selectedPlatform) {
-        messageDiv.innerHTML = "<p class='warning'>Please select your platform (Android or iOS)</p>";
-        return;
-      }
-      
-      if (!email) {
-        messageDiv.innerHTML = "<p class='error'>Please enter an email.</p>";
+      if (!email || !platform) {
+        messageDiv.innerHTML = "<p class='error'>Please select platform and enter email.</p>";
         return;
       }
 
-      // Email format validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        messageDiv.innerHTML = "<p class='error'>Please enter a valid email address.</p>";
-        return;
-      }
+      const collectionName = platform === "Android"
+        ? "Android_Waitlist"
+        : "IOS_Waitlist";
 
       try {
-        // Determine which collection to use
-        const collectionName = selectedPlatform === 'android' ? 'Android Waitlist' : 'IOS Waitlist';
-        
-        // Add email to the specific waitlist
+        // Add email
         await db.collection(collectionName).add({
           email: email,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-        
-        // Update the count in the counters collection
-        const counterRef = db.collection('counters').doc(`${selectedPlatform}_waitlist_count`);
-        
-        // Use transaction to safely increment the counter
+
+        // Increment count
+        const countRef = db.collection(collectionName).doc("meta");
         await db.runTransaction(async (transaction) => {
-          const counterDoc = await transaction.get(counterRef);
-          
-          if (!counterDoc.exists) {
-            // If counter doesn't exist, create it with count = 1
-            transaction.set(counterRef, {
-              count: 1,
-              lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-            });
-          } else {
-            // If counter exists, increment it by 1
-            const currentCount = counterDoc.data().count || 0;
-            transaction.update(counterRef, {
-              count: currentCount + 1,
-              lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-            });
-          }
+          const doc = await transaction.get(countRef);
+          const currentCount = doc.exists ? doc.data().count : 0;
+          transaction.set(countRef, { count: currentCount + 1 });
         });
 
-        // Success message
-        messageDiv.innerHTML = `<p class='success'>🎉 You're on the ${selectedPlatform.toUpperCase()} waitlist!</p>`;
-        
-        // Clear inputs
+        messageDiv.innerHTML = "<p class='success'>🎉 You're on the list!</p>";
         document.getElementById("emailInput").value = "";
-        selectedPlatform = null;
-        
-        // Remove selected class from buttons
-        document.querySelectorAll('.platform-btn').forEach(btn => {
-          btn.classList.remove('selected');
-        });
-        
+        document.getElementById("platformSelect").value = "";
+
       } catch (error) {
-        console.error("Error:", error);
-        
-        // Check if it's a duplicate email error
-        if (error.code === 'permission-denied') {
-          messageDiv.innerHTML = "<p class='error'>This email is already on the waitlist.</p>";
-        } else {
-          messageDiv.innerHTML = "<p class='error'>Something went wrong. Please try again!</p>";
-        }
+        console.error(error);
+        messageDiv.innerHTML = "<p class='error'>Something went wrong. Try again.</p>";
       }
     }
   </script>
